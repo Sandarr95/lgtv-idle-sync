@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "lgtv_idle_sync"
+version = "0.1.0"
+description = ""
+authors = ["Sander Kolman <Sandarr95@users.noreply.github.com>"]
+readme = "README.md"
+packages = [
+    { include = "lgtv_idle_sync", from = "src" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+alga = "^2.0.0"
+wakeonlan = ">= 2.0.0"
+PyQt6 = "^6.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
