@@ -5,7 +5,7 @@ from signal import SIGINT, SIGTERM, signal
 import time
 
 class IdleNotifier:
-    def __init__(self):
+    def __init__(self, idled, resumed):
         # Connect to the Wayland display
         self.display = Display()
         self.display.connect()  # Explicitly connect to the Wayland display
@@ -22,11 +22,11 @@ class IdleNotifier:
         if not hasattr(self, "seat"):
             raise RuntimeError("wl_seat is not available in the compositor!")
 
-        # Create an idle timeout object (e.g., 5 seconds)
-        self.idle_notification = self.idle_notifier.get_idle_notification(5000, self.seat)
+        # Create an idle timeout object (currently, 60 seconds)
+        self.idle_notification = self.idle_notifier.get_idle_notification(60000, self.seat)
         # Attach listeners for idle and resume events
-        self.idle_notification.dispatcher["idled"] = self.idled
-        self.idle_notification.dispatcher["resumed"] = self.resumed
+        self.idle_notification.dispatcher["idled"] = lambda _: idled()
+        self.idle_notification.dispatcher["resumed"] = lambda _: resumed()
 
         self.display.flush()
 
@@ -41,18 +41,8 @@ class IdleNotifier:
         """Handle registry events and bind to ext_idle_notifier_v1"""
         if interface == "ext_idle_notifier_v1":
             self.idle_notifier = registry.bind(name, ext_idle_notifier_v1.ExtIdleNotifierV1, version)
-        elif interface == "zwp_idle_inhibit_manager_v1":
-            print("TODO: listen to ", interface)
         elif interface == "wl_seat":
             self.seat = registry.bind(name, WlSeat, version)
-
-    def idled(self, idle_notification, *args):
-        """Handle idle event"""
-        print("Seat is idle", time.time())
-
-    def resumed(self, idle_notification, *args):
-        """Handle resume event"""
-        print("Seat is active", time.time())
 
     def run(self):
         self.display.dispatch(block=True)
