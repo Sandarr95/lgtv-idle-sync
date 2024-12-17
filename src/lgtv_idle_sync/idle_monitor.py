@@ -1,3 +1,62 @@
+from pywayland.client import Display
+from pywayland.protocol.ext_idle_notify_v1 import ext_idle_notifier_v1
+from pywayland.protocol.wayland import WlSeat
+from signal import SIGINT, SIGTERM, signal
+
+class IdleNotifier:
+    def __init__(self):
+        # Connect to the Wayland display
+        self.display = Display()
+        self.display.connect()  # Explicitly connect to the Wayland display
+        self.registry = self.display.get_registry()
+
+        # Register Wayland global objects
+        self.registry.dispatcher["global"] = self.global_handler
+        self.display.roundtrip()
+
+        # Ensure idle_notifier is available
+        if not hasattr(self, "idle_notifier"):
+            raise RuntimeError("ext_idle_notifier_v1 is not supported by the compositor!")
+        if not hasattr(self, "seat"):
+            raise RuntimeError("wl_seat is not available in the compositor!")
+
+        # Create an idle timeout object (e.g., 5 seconds)
+        self.idle_notification = self.idle_notifier.get_idle_notification(10000, self.seat)
+        # Attach listeners for idle and resume events
+        self.idle_notification.dispatcher["idled"] = self.idled
+        self.idle_notification.dispatcher["resumed"] = self.resumed
+        # self.display.roundtrip()
+        print("ext_idle_notifier_v1 setup complete")
+
+    def global_handler(self, registry, name, interface, version):
+        """Handle registry events and bind to ext_idle_notifier_v1"""
+        print("handle interface: ", interface)
+        if interface == "ext_idle_notifier_v1":
+            self.idle_notifier = registry.bind(name, ext_idle_notifier_v1.ExtIdleNotifierV1, version)
+        elif interface == "wl_seat":
+            self.seat = registry.bind(name, WlSeat, version)
+
+    def idled(self, idle_notification, *args):
+        """Handle idle event"""
+        print("Seat is idle")
+
+    def resumed(self, idle_notification, *args):
+        """Handle resume event"""
+        print("Seat is active")
+
+    def run(self):
+        """Main loop to handle Wayland events"""
+        while True:
+            self.display.dispatch(block=True)
+
+if __name__ == "__main__":
+    notifier = IdleNotifier()
+    print("Run ext_idle_notifier_v1 listener")
+    signal(SIGINT, lambda _, __: notifier.destroy())
+    signal(SIGTERM, lambda _, __: notifier.destroy())
+    notifier.run()
+
+
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtDBus import QDBusConnection, QDBusInterface
 import signal
