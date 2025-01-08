@@ -5,7 +5,10 @@ from lgtv_idle_sync import idle_monitor, lgtv_idle_client
 async def main():
     try:
         loop = asyncio.get_running_loop()
-        notifier = idle_monitor.IdleNotifier()
+        notifier = idle_monitor.IdleNotifier(
+            idled=lgtv_idle_client.idle,
+            resumed=lgtv_idle_client.resume
+        )
 
         tasks = [
             asyncio.create_task(notifier.run())
