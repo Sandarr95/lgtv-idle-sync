@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from wakeonlan import send_magic_packet
 from json.decoder import JSONDecodeError
 from alga import client, state, config
@@ -31,12 +30,23 @@ def resume():
         power_state = client.request(power_state_cmd)['state']
         if power_state == "Screen Off":
             client.request(screen_on_cmd)
+
+        audio_output = client.request(get_sound_output_cmd)['soundOutput']
+        if audio_output != preferred_sound_output:
+            client.request(
+                set_sound_output_cmd,
+                { "output": preferred_sound_output }
+            )
     except JSONDecodeError:
         power_on_tv()
 
-    audio_output = client.request(get_sound_output_cmd)['soundOutput']
-    if audio_output != preferred_sound_output:
-        client.request(
-            set_sound_output_cmd,
-            { "output": preferred_sound_output }
-        )
+def resume_audio():
+    try:
+        audio_output = client.request(get_sound_output_cmd)['soundOutput']
+        if audio_output != preferred_sound_output:
+            client.request(
+                set_sound_output_cmd,
+                { "output": preferred_sound_output }
+            )
+    except JSONDecodeError:
+        power_on_tv()
