@@ -6,6 +6,7 @@ async def main():
     try:
         loop = asyncio.get_running_loop()
         notifier = idle_monitor.IdleNotifier(
+            idle_timeout_secs=300,
             idled=lgtv_idle_client.idle,
             resumed=lgtv_idle_client.resume
         )
