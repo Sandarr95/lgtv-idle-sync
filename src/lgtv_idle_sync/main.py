@@ -7,12 +7,13 @@ async def main():
         loop = asyncio.get_running_loop()
         notifier = idle_monitor.IdleNotifier()
 
-        loop.add_reader(notifier.fd, notifier.run)
-        print("Waiting")
+        tasks = [
+            asyncio.create_task(notifier.run())
+        ]
+        print("Started")
         await asyncio.Event().wait()
     except asyncio.exceptions.CancelledError:
         print("Exiting")
-        loop.remove_reader(notifier.fd)
 
 if __name__ == "__main__":
     asyncio.run(main())
