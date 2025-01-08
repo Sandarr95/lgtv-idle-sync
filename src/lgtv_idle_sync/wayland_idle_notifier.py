@@ -32,7 +32,7 @@ class Inhibitor:
         if idle_notifier:
             idle_notifier.deregister_inhibitor(self)
 
-class IdleNotifier:
+class WaylandIdleNotifier:
     def __init__(self, idle_timeout_secs=5, idle_fn=default_idled, resume_fn=default_resumed):
         self.idling = False
         self.idle_timeout_ms = idle_timeout_secs * 1000
