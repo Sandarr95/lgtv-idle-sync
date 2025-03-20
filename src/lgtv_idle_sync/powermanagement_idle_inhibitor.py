@@ -1,8 +1,12 @@
+import asyncio
+import logging
 from importlib import resources
 from dbus_fast.aio import MessageBus
 from dbus_fast.errors import DBusError
 
 import lgtv_idle_sync.resources.dbus
+
+logger = logging.getLogger(__name__)
 
 class PowerManagementIdleInhibitor:
 
@@ -31,11 +35,34 @@ class PowerManagementIdleInhibitor:
         )
 
         self._policy_agent.on_has_inhibit_changed(self.on_has_inhibit_changed)
+        await self.on_has_inhibit_changed(await self._policy_agent.call_has_inhibit())
+
+    async def disconnect(self):
+        self._policy_agent.off_has_inhibit_changed(self.on_has_inhibit_changed)
+        self._message_bus.disconnect()
+        await self._message_bus.wait_for_disconnect()
+
+    async def run(self):
         try:
-          await self.on_has_inhibit_changed(await self._policy_agent.call_has_inhibit())
-        except DBusError:
-          pass
-        return self
+            while(True):
+                try:
+                    logger.debug("Initiating DBus connection")
+                    await self.connect()
+                    logger.debug("Waiting for DBus connection to close")
+                    await self._message_bus.wait_for_disconnect()
+                except DBusError as e:
+                    logger.error(e)
+                    break
+                except Exception as e:
+                    logger.error(e)
+                    logger.error("DBus disconnected unexpectedly, reconnecting adter 5 seconds")
+                    await asyncio.sleep(5)
+                    pass
+        except asyncio.exceptions.CancelledError:
+            raise
+        finally:
+            logger.debug("Disconnecting DBus for shutdown")
+            await self.disconnect()
 
     async def on_has_inhibit_changed(self, has_inhibit):
         match (has_inhibit, self._inhibitor is None):
