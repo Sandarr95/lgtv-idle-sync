@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import weakref
 
 from pywayland.client import Display
 from pywayland.protocol.ext_idle_notify_v1 import ext_idle_notifier_v1
 from pywayland.protocol.wayland import WlSeat
+
+logger = logging.getLogger(__name__)
 
 async def wait_readable(fd):
     loop = asyncio.get_running_loop()
@@ -16,11 +19,11 @@ async def wait_readable(fd):
 
 def default_idled():
     """Handle idle event"""
-    print("Seat is idle")
+    logger.debug("Seat is idle")
 
 def default_resumed():
     """Handle resume event"""
-    print("Seat is active")
+    logger.debug("Seat is active")
 
 class Inhibitor:
     def __init__(self, idle_notifier):
@@ -70,26 +73,31 @@ class WaylandIdleNotifier:
     def global_handler(self, registry, name, interface, version):
         """Handle registry events and bind to ext_idle_notifier_v1"""
         if interface == "ext_idle_notifier_v1":
+            logger.debug("Binding ext_idle_notifier_v1")
             self.idle_notifier = registry.bind(name, ext_idle_notifier_v1.ExtIdleNotifierV1, version)
         elif interface == "wl_seat":
+            logger.debug("Binding wl_seat")
             self.seat = registry.bind(name, WlSeat, version)
 
     def idled(self, idle_notification, *args):
         if self._can_run_idle:
+            logger.debug("Idling")
+            self.idle_fn()
             self._can_run_idle = False
             self._can_run_resume = True
-            self.idle_fn()
 
     def resumed(self, idle_notification, *args):
         if self._can_run_resume:
+            logger.debug("Resuming")
+            self.resume_fn()
             self._can_run_idle = True
             self._can_run_resume = False
-            self.resume_fn()
             if len(self._inhibitors) > 0:
                 self.deregister_idle_notifier()
 
     def register_idle_notifier(self):
         if not self.idle_notification and len(self._inhibitors) == 0:
+            logger.debug("Registering idle notifications")
             self.idle_notification = self.idle_notifier.get_idle_notification(
                 self.idle_timeout_ms,
                 self.seat
@@ -99,22 +107,26 @@ class WaylandIdleNotifier:
             self.display.flush()
 
     def deregister_idle_notifier(self):
-        if self._can_run_idle and self.idle_notification:
+        if self._can_run_idle and self.idle_notification and len(self._inhibitors) == 0:
+            logger.debug("Deregistering idle notifications")
             self.idle_notification.destroy()
             self.idle_notification = None
 
     def register_inhibitor(self):
+        logger.debug("Registering inhibitor")
         inhibitor = Inhibitor(self)
         self._inhibitors.add(inhibitor)
         self.deregister_idle_notifier()
         return inhibitor
 
     def deregister_inhibitor(self, inhibitor):
+        logger.debug("Deregistering inhibitor")
         self._inhibitors.discard(inhibitor)
         self.register_idle_notifier()
 
     def reset_idling(self):
         if not self._can_run_idle:
+            logger.debug("Reset idling state")
             self._can_run_idle = True
             self.deregister_idle_notifier()
             self.register_idle_notifier()

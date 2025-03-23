@@ -1,7 +1,10 @@
 import asyncio
+import logging
 import time
 from pulsectl_asyncio import PulseAsync
 from pulsectl import PulseEventMaskEnum, PulseEventTypeEnum
+
+logger = logging.getLogger(__name__)
 
 class PulseAudioNotifier:
     def __init__(self, resume_audio, min_secs_between_requests=540): # My soundbars default timeout is 9 mins
@@ -19,6 +22,7 @@ class PulseAudioNotifier:
 
     def _resume_audio(self):
         if self._time_between_requests_exceeded():
+            logger.debug("Audio detected while speaker might be off")
             self._resume_audio_fn()
 
     async def run(self):
