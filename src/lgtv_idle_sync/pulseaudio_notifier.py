@@ -7,7 +7,7 @@ from pulsectl import PulseEventMaskEnum, PulseEventTypeEnum
 logger = logging.getLogger(__name__)
 
 class PulseAudioNotifier:
-    def __init__(self, resume_audio, min_secs_between_requests=540): # My soundbars default timeout is 9 mins
+    def __init__(self, resume_audio, min_secs_between_requests=240): # My soundbars default timeout is 4 mins
         self._min_secs_between_requests = min_secs_between_requests
         self._last_resume_time = time.monotonic() - min_secs_between_requests
         self._resume_audio_fn = resume_audio

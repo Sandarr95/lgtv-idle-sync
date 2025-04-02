@@ -55,7 +55,7 @@ class PowerManagementIdleInhibitor:
                     break
                 except Exception as e:
                     logger.error(e)
-                    logger.error("DBus disconnected unexpectedly, reconnecting adter 5 seconds")
+                    logger.error("DBus disconnected unexpectedly, reconnecting after 5 seconds")
                     await asyncio.sleep(5)
                     pass
         except asyncio.exceptions.CancelledError:
@@ -67,7 +67,9 @@ class PowerManagementIdleInhibitor:
     async def on_has_inhibit_changed(self, has_inhibit):
         match (has_inhibit, self._inhibitor is None):
             case (True, True):
+                logger.debug("Inhibit")
                 self._inhibitor = self._idle_notifier.register_inhibitor()
             case (False, False):
+                logger.debug("Uninhibit")
                 self._inhibitor.destroy()
                 self._inhibitor = None

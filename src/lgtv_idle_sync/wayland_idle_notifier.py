@@ -36,6 +36,10 @@ class Inhibitor:
             idle_notifier.deregister_inhibitor(self)
 
 class WaylandIdleNotifier:
+    # TODO: Seperate idling, resuming logic from wayland integration
+    # WaylandIdleNotifier(IdleNotifier)
+    # public interface has concrete implementation in IdleNotifier
+    # that calls abstract method implemented in WaylandIdleNotifier
     def __init__(self, idle_timeout_secs=5, idle_fn=default_idled, resume_fn=default_resumed):
         self._can_run_idle = True;
         self._can_run_resume = False;
@@ -107,7 +111,7 @@ class WaylandIdleNotifier:
             self.display.flush()
 
     def deregister_idle_notifier(self):
-        if self._can_run_idle and self.idle_notification and len(self._inhibitors) == 0:
+        if self._can_run_idle and self.idle_notification:
             logger.debug("Deregistering idle notifications")
             self.idle_notification.destroy()
             self.idle_notification = None
@@ -136,5 +140,7 @@ class WaylandIdleNotifier:
             while(True):
                 await wait_readable(self.fd)
                 self.display.dispatch(block=True)
+                # TODO: detect `self.fd` becoming unreadable, reconnect:
+                # Use inotify `$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY` (or "wayland-0")
         except asyncio.exceptions.CancelledError:
             raise
