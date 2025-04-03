@@ -2,7 +2,7 @@
 import asyncio
 import os
 import sys
-from lgtv_idle_sync.wayland_idle_notifier import WaylandIdleNotifier
+from lgtv_idle_sync.wayland_idle_manager import WaylandIdleManager
 from lgtv_idle_sync.powermanagement_idle_inhibitor import PowerManagementIdleInhibitor
 from lgtv_idle_sync.pulseaudio_notifier import PulseAudioNotifier
 from lgtv_idle_sync import lgtv_idle_client
@@ -16,7 +16,7 @@ async def main():
         lgtv_sound_idle_time = int(os.environ.get('LGTV_SOUND_IDLE_TIME', "120"))
 
         loop = asyncio.get_running_loop()
-        wayland_idle_notifier = WaylandIdleNotifier(
+        wayland_idle_manager = WaylandIdleManager(
             idle_timeout_secs=lgtv_screen_idle_time,
             idle_fn=lgtv_idle_client.idle,
             resume_fn=lgtv_idle_client.resume
@@ -24,7 +24,7 @@ async def main():
 
         def resume_audio():
             lgtv_idle_client.resume_audio()
-            wayland_idle_notifier.reset_idling()
+            wayland_idle_manager.reset()
 
         pulseaudio_notifier = PulseAudioNotifier(
             resume_audio=resume_audio,
@@ -32,11 +32,11 @@ async def main():
         )
 
         pwr_management_inhibitor = PowerManagementIdleInhibitor(
-            wayland_idle_notifier
+            wayland_idle_manager
         )
 
         tasks = [
-            asyncio.create_task(wayland_idle_notifier.run()),
+            asyncio.create_task(wayland_idle_manager.run()),
             asyncio.create_task(pulseaudio_notifier.run()),
             asyncio.create_task(pwr_management_inhibitor.run())
         ]

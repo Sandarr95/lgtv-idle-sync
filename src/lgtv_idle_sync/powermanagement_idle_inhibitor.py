@@ -5,19 +5,19 @@ from dbus_fast.aio import MessageBus
 from dbus_fast.errors import DBusError
 
 import lgtv_idle_sync.resources.dbus
+from lgtv_idle_sync.interface import Inhibitor
 
 logger = logging.getLogger(__name__)
 
-class PowerManagementIdleInhibitor:
+class PowerManagementIdleInhibitor(Inhibitor):
 
     _dbus_resource = 'org.freedesktop.PowerManagement.Inhibit.xml'
     _dbus_bus_name = 'org.freedesktop.PowerManagement.Inhibit'
     _dbus_path = '/org/freedesktop/PowerManagement/Inhibit'
     _dbus_interface = 'org.freedesktop.PowerManagement.Inhibit'
 
-    def __init__(self, idle_notifier):
-        self._idle_notifier = idle_notifier
-        self._inhibitor = None
+    def __init__(self, idle_manager):
+        super().__init__(idle_manager)
 
     async def connect(self):
         self._message_bus = await MessageBus().connect()
@@ -34,11 +34,11 @@ class PowerManagementIdleInhibitor:
             PowerManagementIdleInhibitor._dbus_interface
         )
 
-        self._policy_agent.on_has_inhibit_changed(self.on_has_inhibit_changed)
-        await self.on_has_inhibit_changed(await self._policy_agent.call_has_inhibit())
+        self._policy_agent.on_has_inhibit_changed(self._on_has_inhibit_changed)
+        await self._on_has_inhibit_changed(await self._policy_agent.call_has_inhibit())
 
     async def disconnect(self):
-        self._policy_agent.off_has_inhibit_changed(self.on_has_inhibit_changed)
+        self._policy_agent.off_has_inhibit_changed(self._on_has_inhibit_changed)
         self._message_bus.disconnect()
         await self._message_bus.wait_for_disconnect()
 
@@ -64,12 +64,8 @@ class PowerManagementIdleInhibitor:
             logger.debug("Disconnecting DBus for shutdown")
             await self.disconnect()
 
-    async def on_has_inhibit_changed(self, has_inhibit):
-        match (has_inhibit, self._inhibitor is None):
-            case (True, True):
-                logger.debug("Inhibit")
-                self._inhibitor = self._idle_notifier.register_inhibitor()
-            case (False, False):
-                logger.debug("Uninhibit")
-                self._inhibitor.destroy()
-                self._inhibitor = None
+    async def _on_has_inhibit_changed(self, has_inhibit):
+        if has_inhibit:
+            self.inhibit()
+        else:
+            self.uninhibit()
