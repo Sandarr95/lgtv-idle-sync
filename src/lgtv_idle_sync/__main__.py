@@ -35,10 +35,16 @@ async def main():
             wayland_idle_manager
         )
 
+        sleep_notifier = SleepNotifier(
+            power_off_fn=lgtv_idle_client.power_off,
+            power_on_fn=lgtv_idle_client.power_on
+        )
+
         tasks = [
             asyncio.create_task(wayland_idle_manager.run()),
             asyncio.create_task(pulseaudio_notifier.run()),
-            asyncio.create_task(pwr_management_inhibitor.run())
+            asyncio.create_task(pwr_management_inhibitor.run()),
+            asyncio.create_task(sleep_notifier.run())
         ]
         logger.info("Started")
         await asyncio.Event().wait()

@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 power_state_cmd = "ssap://com.webos.service.tvpower/power/getPowerState"
 screen_on_cmd = "ssap://com.webos.service.tvpower/power/turnOnScreen"
 screen_off_cmd = "ssap://com.webos.service.tvpower/power/turnOffScreen"
+power_off_cmd = "ssap://com.webos.service.tvpower/power/turnOff"
 get_sound_output_cmd = "ssap://audio/getSoundOutput"
 set_sound_output_cmd = "ssap://audio/changeSoundOutput"
 preferred_sound_output = "external_arc"
@@ -52,6 +53,17 @@ def resume():
         _resume_audio()
     except JSONDecodeError:
         _power_on_tv()
+
+@retry(wait=wait_exponential(multiplier=0.5, stop=stop_after_attempt(3)))
+def power_off():
+    try:
+        client.request(power_off_cmd)
+    except JSONDecodeError:
+        pass
+
+@retry(wait=wait_exponential(multiplier=0.5, stop=stop_after_attempt(3)))
+def power_on():
+    _power_on_tv()
 
 @retry(wait=wait_exponential(multiplier=0.5), stop=stop_after_attempt(3))
 def resume_audio():
