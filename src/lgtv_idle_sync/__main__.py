@@ -45,6 +45,11 @@ async def main():
     except asyncio.exceptions.CancelledError:
         logger.info("Exiting")
 
+def cli():
+    log_level = logging.INFO
+    logging.basicConfig(level=log_level)
+    asyncio.run(main())
+
 if __name__ == "__main__":
     log_level = logging.INFO if getattr(sys, 'frozen', False) else logging.DEBUG
     logging.basicConfig(level=log_level)
