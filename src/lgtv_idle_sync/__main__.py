@@ -5,6 +5,7 @@ import sys
 from lgtv_idle_sync.wayland_idle_manager import WaylandIdleManager
 from lgtv_idle_sync.powermanagement_idle_inhibitor import PowerManagementIdleInhibitor
 from lgtv_idle_sync.pulseaudio_notifier import PulseAudioNotifier
+from lgtv_idle_sync.sleep_notifier import SleepNotifier
 from lgtv_idle_sync import lgtv_idle_client
 
 import logging

@@ -54,14 +54,14 @@ def resume():
     except JSONDecodeError:
         _power_on_tv()
 
-@retry(wait=wait_exponential(multiplier=0.5, stop=stop_after_attempt(3)))
+@retry(wait=wait_exponential(multiplier=0.5), stop=stop_after_attempt(3))
 def power_off():
     try:
         client.request(power_off_cmd)
     except JSONDecodeError:
         pass
 
-@retry(wait=wait_exponential(multiplier=0.5, stop=stop_after_attempt(3)))
+@retry(wait=wait_exponential(multiplier=0.5), stop=stop_after_attempt(3))
 def power_on():
     _power_on_tv()
 
