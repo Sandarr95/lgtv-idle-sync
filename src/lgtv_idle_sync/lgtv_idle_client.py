@@ -13,7 +13,7 @@ get_sound_output_cmd = "ssap://audio/getSoundOutput"
 set_sound_output_cmd = "ssap://audio/changeSoundOutput"
 preferred_sound_output = "external_arc"
 
-def power_on_tv():
+def _power_on_tv():
     logger.debug("Powering on the tv")
     cfg = config.get()
 
@@ -21,6 +21,15 @@ def power_on_tv():
     tv = cfg["tvs"][tv_id]
 
     send_magic_packet(tv["mac"])
+
+def _resume_audio():
+    audio_output = client.request(get_sound_output_cmd)['soundOutput']
+    if audio_output != preferred_sound_output:
+        logger.debug("Activating the audio output")
+        client.request(
+            set_sound_output_cmd,
+            { "output": preferred_sound_output }
+        )
 
 @retry(wait=wait_exponential(multiplier=0.5), stop=stop_after_attempt(3))
 def idle():
@@ -42,20 +51,11 @@ def resume():
 
         _resume_audio()
     except JSONDecodeError:
-        power_on_tv()
-
-def _resume_audio():
-    audio_output = client.request(get_sound_output_cmd)['soundOutput']
-    if audio_output != preferred_sound_output:
-        logger.debug("Activating the audio output")
-        client.request(
-            set_sound_output_cmd,
-            { "output": preferred_sound_output }
-        )
+        _power_on_tv()
 
 @retry(wait=wait_exponential(multiplier=0.5), stop=stop_after_attempt(3))
 def resume_audio():
     try:
         _resume_audio()
     except JSONDecodeError:
-        power_on_tv()
+        _power_on_tv()

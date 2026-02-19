@@ -9,12 +9,12 @@ from lgtv_idle_sync.interface import Inhibitor
 
 logger = logging.getLogger(__name__)
 
-class PowerManagementIdleInhibitor(Inhibitor):
+POWER_MANAGEMENT_DBUS_RESOURCE = 'org.freedesktop.PowerManagement.Inhibit.xml'
+POWER_MANAGEMENT_DBUS_BUS_NAME = 'org.freedesktop.PowerManagement.Inhibit'
+POWER_MANAGEMENT_DBUS_PATH = '/org/freedesktop/PowerManagement/Inhibit'
+POWER_MANAGEMENT_DBUS_INTERFACE = 'org.freedesktop.PowerManagement.Inhibit'
 
-    _dbus_resource = 'org.freedesktop.PowerManagement.Inhibit.xml'
-    _dbus_bus_name = 'org.freedesktop.PowerManagement.Inhibit'
-    _dbus_path = '/org/freedesktop/PowerManagement/Inhibit'
-    _dbus_interface = 'org.freedesktop.PowerManagement.Inhibit'
+class PowerManagementIdleInhibitor(Inhibitor):
 
     def __init__(self, idle_manager):
         super().__init__(idle_manager)
@@ -23,15 +23,15 @@ class PowerManagementIdleInhibitor(Inhibitor):
         self._message_bus = await MessageBus().connect()
         self._introspection = resources.read_text(
             lgtv_idle_sync.resources.dbus,
-            PowerManagementIdleInhibitor._dbus_resource
+            POWER_MANAGEMENT_DBUS_RESOURCE
         )
         self._power_management = self._message_bus.get_proxy_object(
-            PowerManagementIdleInhibitor._dbus_bus_name,
-            PowerManagementIdleInhibitor._dbus_path,
+            POWER_MANAGEMENT_DBUS_BUS_NAME,
+            POWER_MANAGEMENT_DBUS_PATH,
             self._introspection
         )
         self._policy_agent = self._power_management.get_interface(
-            PowerManagementIdleInhibitor._dbus_interface
+            POWER_MANAGEMENT_DBUS_INTERFACE
         )
 
         self._policy_agent.on_has_inhibit_changed(self._on_has_inhibit_changed)
