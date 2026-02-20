@@ -6,3 +6,12 @@ It tailors to my specific personal setup and is probably not useful somewhere el
 Configuration can be done through environment variables:
 * `LGTV_SCREEN_IDLE_TIME`: The number of seconds before the screen should turn off
 * `LGTV_SOUND_IDLE_TIME`: The number of seconds after which the HDMI ARC device turns off
+
+## Run
+Run by executing `uv run python -m lgtv_idle_sync` or `uv run lgtv-idle-sync`
+
+If wayland protocols are not available on the system, generate them from included protocols with:
+
+``` shell
+uv run pywayland-scanner -i protocols/*.xml
+```
