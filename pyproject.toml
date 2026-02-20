@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Sync idle state to LGTV (with alga)"
 authors = [{ name = "Sander Kolman", email = "Sandarr95@users.noreply.github.com" }]
 readme = "README.md"
-requires-python = ">=3.12,<3.14"
+requires-python = ">=3.12"
 
 dependencies = [
     "alga >= 2.0.1",
