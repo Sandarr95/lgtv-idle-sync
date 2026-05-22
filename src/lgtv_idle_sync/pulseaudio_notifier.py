@@ -20,13 +20,13 @@ class PulseAudioNotifier:
         else:
             return False
 
-    def _resume_audio(self):
+    async def _resume_audio(self):
         if self._time_between_requests_exceeded():
             logger.debug("Audio detected while speaker might be off")
-            self._resume_audio_fn()
+            await asyncio.to_thread(self._resume_audio_fn)
 
     async def run(self):
         async with PulseAsync('event-printer') as pulse:
             async for event in pulse.subscribe_events(PulseEventMaskEnum.sink_input):
                 if event.t == PulseEventTypeEnum.new:
-                    self._resume_audio()
+                    await self._resume_audio()

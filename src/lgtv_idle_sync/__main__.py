@@ -38,7 +38,8 @@ async def main():
 
         sleep_notifier = SleepNotifier(
             power_off_fn=lgtv_idle_client.power_off,
-            power_on_fn=lgtv_idle_client.power_on
+            power_on_fn=lgtv_idle_client.power_on,
+            sleep_state_fn=idle_policy.set_sleeping
         )
 
         tasks = [
