@@ -3,7 +3,7 @@ import asyncio
 import os
 import sys
 from lgtv_idle_sync.wayland_idle_manager import WaylandIdleManager
-from lgtv_idle_sync.powermanagement_idle_inhibitor import PowerManagementIdleInhibitor
+from lgtv_idle_sync.idle_policy import IdlePolicy
 from lgtv_idle_sync.pulseaudio_notifier import PulseAudioNotifier
 from lgtv_idle_sync.sleep_notifier import SleepNotifier
 from lgtv_idle_sync import lgtv_idle_client
@@ -16,24 +16,24 @@ async def main():
         lgtv_screen_idle_time = int(os.environ.get('LGTV_SCREEN_IDLE_TIME', "180"))
         lgtv_sound_idle_time = int(os.environ.get('LGTV_SOUND_IDLE_TIME', "120"))
 
-        loop = asyncio.get_running_loop()
         wayland_idle_manager = WaylandIdleManager(
             idle_timeout_secs=lgtv_screen_idle_time,
+        )
+
+        idle_policy = IdlePolicy(
+            wayland_idle_manager=wayland_idle_manager,
             idle_fn=lgtv_idle_client.idle,
             resume_fn=lgtv_idle_client.resume
         )
 
-        def resume_audio():
-            lgtv_idle_client.resume_audio()
-            wayland_idle_manager.reset()
-
-        pulseaudio_notifier = PulseAudioNotifier(
-            resume_audio=resume_audio,
-            min_secs_between_requests=lgtv_sound_idle_time
+        wayland_idle_manager.set_callbacks(
+            idle_fn=idle_policy.on_idled,
+            resume_fn=idle_policy.on_resumed
         )
 
-        pwr_management_inhibitor = PowerManagementIdleInhibitor(
-            wayland_idle_manager
+        pulseaudio_notifier = PulseAudioNotifier(
+            resume_audio=lgtv_idle_client.resume_audio,
+            min_secs_between_requests=lgtv_sound_idle_time
         )
 
         sleep_notifier = SleepNotifier(
@@ -44,7 +44,7 @@ async def main():
         tasks = [
             asyncio.create_task(wayland_idle_manager.run()),
             asyncio.create_task(pulseaudio_notifier.run()),
-            asyncio.create_task(pwr_management_inhibitor.run()),
+            asyncio.create_task(idle_policy.run()),
             asyncio.create_task(sleep_notifier.run())
         ]
         logger.info("Started")
