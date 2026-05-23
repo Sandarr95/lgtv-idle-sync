@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -47,12 +48,34 @@ WantedBy=graphical-session.target
 """
 
 
+_BREW_CELLAR_RE = re.compile(r"^(.*/\.linuxbrew)/Cellar/([^/]+)/[^/]+/")
+
+
 def _resolve_command_path(name):
-    bin_dir = os.path.dirname(sys.executable)
-    candidate = os.path.join(bin_dir, name)
-    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-        return candidate
-    return shutil.which(name)
+    # The binary in sys.executable's directory belongs to THIS install
+    # (the venv that's running lgtv-install). Pick a path that survives
+    # upgrades: brew's opt-symlink for Homebrew, the matching ~/.local/bin
+    # entry for uv-tool, or fall back to the sibling itself.
+    sibling = os.path.join(os.path.dirname(sys.executable), name)
+    if not (os.path.isfile(sibling) and os.access(sibling, os.X_OK)):
+        return shutil.which(name)
+
+    # Homebrew: rewrite Cellar/<pkg>/<ver>/.../<name> → opt/<pkg>/bin/<name>
+    m = _BREW_CELLAR_RE.match(os.path.realpath(sibling))
+    if m:
+        stable = f"{m.group(1)}/opt/{m.group(2)}/bin/{name}"
+        if os.path.exists(stable):
+            return stable
+
+    # Otherwise (e.g. uv tool), prefer a PATH lookup if it points at THIS install.
+    on_path = shutil.which(name)
+    if on_path:
+        try:
+            if os.path.samefile(on_path, sibling):
+                return on_path
+        except OSError:
+            pass
+    return sibling
 
 
 def install_desktop_files():
