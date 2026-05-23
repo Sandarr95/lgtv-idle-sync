@@ -1,6 +1,6 @@
 [project]
 name = "lgtv_idle_sync"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sync idle state to LGTV (with alga)"
 authors = [{ name = "Sander Kolman", email = "Sandarr95@users.noreply.github.com" }]
 readme = "README.md"
@@ -19,8 +19,13 @@ dependencies = [
 dev = [ "pyinstaller >= 6.11.1" ]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.11.10,<0.12"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# Include uv.lock in the sdist so downstream installs can do
+# `uv sync --frozen` for reproducible builds.
+source-include = ["uv.lock"]
 
 [project.scripts]
 lgtv-idle-sync = "lgtv_idle_sync.__main__:cli"
